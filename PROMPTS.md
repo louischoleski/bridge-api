@@ -94,3 +94,28 @@ Create SPEC-A-architecture.md with DDD layers, patterns, extension guide.
 ```
 Create SPEC-B-api.md with endpoints, auth, errors, examples.
 ```
+
+---
+
+## 6. Add Salesforce Integration
+
+```
+Please add the missing SalesforceCartClient and ensure it respect DDD
+
+Requirements:
+- Implement SalesforceCartClient test double with realistic behavior
+- Include context expiry simulation (TTL-based)
+- Follow DDD principles (domain layer, value objects, entities, events)
+- Integrate with existing cart operations
+- Write comprehensive unit tests
+- Update dependency injection configuration
+```
+
+**Accepted**: Full implementation including:
+- Domain layer (SalesforceCartContext entity, ContextTTL value object, etc.)
+- Infrastructure layer (SalesforceCartClientTestDouble with context expiry)
+- Application layer (SyncCartToSalesforceUseCase, ValidateSalesforceContextUseCase)
+- Integration with AddItemToCartUseCase
+- 45+ unit tests covering context expiry scenarios
+- Updated DI container
+- Documentation updates

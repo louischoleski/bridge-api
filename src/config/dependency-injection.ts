@@ -7,10 +7,12 @@ import { CartRepository } from '~infrastructure/persistence/repositories/cart.re
 import { OrderRepository } from '~infrastructure/persistence/repositories/order.repository';
 import { ProductRepository } from '~infrastructure/persistence/repositories/product.repository';
 import { UserRepository } from '~infrastructure/persistence/repositories/user.repository';
+import { SalesforceContextRepository } from '~infrastructure/persistence/repositories/salesforce-context.repository';
 import { ICartRepository } from '~domain/cart/repositories/cart.repository.interface';
 import { IOrderRepository } from '~domain/order/repositories/order.repository.interface';
 import { IProductRepository } from '~domain/product/repositories/product.repository.interface';
 import { IUserRepository } from '~domain/user/repositories/user.repository.interface';
+import { ISalesforceContextRepository } from '~domain/salesforce/repositories/salesforce-context.repository.interface';
 
 // Use Cases
 import { AddItemToCartUseCase } from '~application/use-cases/cart/add-item-to-cart.use-case';
@@ -27,6 +29,9 @@ import { CreateProductUseCase } from '~application/use-cases/product/create-prod
 import { UpdateProductUseCase } from '~application/use-cases/product/update-product.use-case';
 import { DeleteProductUseCase } from '~application/use-cases/product/delete-product.use-case';
 import { LoginUseCase } from '~application/use-cases/auth/login.use-case';
+import { SyncCartToSalesforceUseCase } from '~application/use-cases/salesforce/sync-cart-to-salesforce.use-case';
+import { ValidateSalesforceContextUseCase } from '~application/use-cases/salesforce/validate-salesforce-context.use-case';
+import { RefreshSalesforceContextUseCase } from '~application/use-cases/salesforce/refresh-salesforce-context.use-case';
 
 // Controllers
 import { CartController } from '~api/rest/controllers/cart.controller';
@@ -35,6 +40,8 @@ import { ProductController } from '~api/rest/controllers/product.controller';
 
 // Infrastructure
 import { SalesforceClient } from '~infrastructure/external/salesforce/salesforce.client';
+import { SalesforceCartClientTestDouble } from '~infrastructure/external/salesforce/salesforce-cart-client.test-double';
+import { ISalesforceCartService } from '~domain/salesforce/services/salesforce-cart.service.interface';
 import { EventBus } from '~infrastructure/messaging/event-bus';
 import { LoggerService } from '~infrastructure/logging/logger.service';
 import { EnvironmentConfig } from './environment';
@@ -50,6 +57,7 @@ export class DIContainer {
   private _orderRepository?: IOrderRepository;
   private _productRepository?: IProductRepository;
   private _userRepository?: IUserRepository;
+  private _salesforceContextRepository?: ISalesforceContextRepository;
 
   // Use Cases - Cart
   private _addItemToCartUseCase?: AddItemToCartUseCase;
@@ -73,6 +81,11 @@ export class DIContainer {
   // Use Cases - Auth
   private _loginUseCase?: LoginUseCase;
 
+  // Use Cases - Salesforce
+  private _syncCartToSalesforceUseCase?: SyncCartToSalesforceUseCase;
+  private _validateSalesforceContextUseCase?: ValidateSalesforceContextUseCase;
+  private _refreshSalesforceContextUseCase?: RefreshSalesforceContextUseCase;
+
   // Controllers
   private _cartController?: CartController;
   private _orderController?: OrderController;
@@ -80,6 +93,7 @@ export class DIContainer {
 
   // Infrastructure
   private _salesforceClient?: SalesforceClient;
+  private _salesforceCartService?: ISalesforceCartService;
   private _eventBus?: EventBus;
   private _logger?: LoggerService;
 
@@ -125,12 +139,21 @@ export class DIContainer {
     return this._userRepository;
   }
 
+  get salesforceContextRepository(): ISalesforceContextRepository {
+    if (!this._salesforceContextRepository) {
+      this._salesforceContextRepository = new SalesforceContextRepository();
+    }
+    return this._salesforceContextRepository;
+  }
+
   // Use Cases - Cart
   get addItemToCartUseCase(): AddItemToCartUseCase {
     if (!this._addItemToCartUseCase) {
       this._addItemToCartUseCase = new AddItemToCartUseCase(
         this.cartRepository,
-        this.productRepository
+        this.productRepository,
+        this.salesforceCartService,
+        this.salesforceContextRepository
       );
     }
     return this._addItemToCartUseCase;
@@ -244,6 +267,38 @@ export class DIContainer {
     return this._loginUseCase;
   }
 
+  // Use Cases - Salesforce
+  get syncCartToSalesforceUseCase(): SyncCartToSalesforceUseCase {
+    if (!this._syncCartToSalesforceUseCase) {
+      this._syncCartToSalesforceUseCase = new SyncCartToSalesforceUseCase(
+        this.cartRepository,
+        this.salesforceContextRepository,
+        this.salesforceCartService
+      );
+    }
+    return this._syncCartToSalesforceUseCase;
+  }
+
+  get validateSalesforceContextUseCase(): ValidateSalesforceContextUseCase {
+    if (!this._validateSalesforceContextUseCase) {
+      this._validateSalesforceContextUseCase = new ValidateSalesforceContextUseCase(
+        this.salesforceContextRepository,
+        this.salesforceCartService
+      );
+    }
+    return this._validateSalesforceContextUseCase;
+  }
+
+  get refreshSalesforceContextUseCase(): RefreshSalesforceContextUseCase {
+    if (!this._refreshSalesforceContextUseCase) {
+      this._refreshSalesforceContextUseCase = new RefreshSalesforceContextUseCase(
+        this.salesforceContextRepository,
+        this.salesforceCartService
+      );
+    }
+    return this._refreshSalesforceContextUseCase;
+  }
+
   // Controllers
   get cartController(): CartController {
     if (!this._cartController) {
@@ -292,6 +347,19 @@ export class DIContainer {
       });
     }
     return this._salesforceClient;
+  }
+
+  get salesforceCartService(): ISalesforceCartService {
+    if (!this._salesforceCartService) {
+      // Use test double - replace with real implementation when ready
+      this._salesforceCartService = new SalesforceCartClientTestDouble({
+        networkLatency: 50,
+        failureRate: 0.0,
+        defaultTTL: 900, // 15 minutes
+        enableLogging: this.config.nodeEnv === 'development',
+      });
+    }
+    return this._salesforceCartService;
   }
 
   get eventBus(): EventBus {

@@ -1,6 +1,14 @@
 # Bridge API
 
-A thin RESTful Experience layer for telecom cart operations with JWT authentication and role-based access control.
+A thin RESTful Experience API for telecom cart operations, built on top of a non-persistent Salesforce cart context with JWT authentication and role-based access control.
+
+## Key Features
+
+- **Salesforce Integration**: Seamless synchronization with Salesforce cart context (test double implementation)
+- **Context Expiry Management**: Handles non-persistent Salesforce sessions with TTL-based expiration
+- **DDD Architecture**: Domain-Driven Design with Clean Architecture principles
+- **Type-Safe**: Written in TypeScript with strict mode enabled
+- **In-Memory Storage**: No database required, designed for easy persistence layer swapping
 
 ## Quick Start
 
@@ -60,10 +68,17 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 ### Cart (requires authentication)
 
 - `GET /api/v1/cart` - Get cart
-- `POST /api/v1/cart/items` - Add item
+- `POST /api/v1/cart/items` - Add item (optionally syncs to Salesforce)
 - `PUT /api/v1/cart/items/:id` - Update item
 - `DELETE /api/v1/cart/items/:id` - Remove item
 - `DELETE /api/v1/cart` - Clear cart
+
+### Salesforce Integration (requires authentication)
+
+- Cart operations automatically sync to Salesforce context
+- Context TTL: 15 minutes (configurable)
+- Automatic context renewal on cart updates
+- Graceful handling of context expiry
 
 ### Orders (requires authentication)
 
@@ -91,8 +106,8 @@ node test-permissions.js
 
 ```
 src/
-├── api/                  # REST controllers, routes, middlewares
-├── application/          # Use cases, DTOs, mappers
+├── api/                 # REST controllers, routes, middlewares
+├── application/         # Use cases, DTOs, mappers
 ├── domain/              # Entities, aggregates, value objects
 ├── infrastructure/      # Repositories, external services
 └── config/              # Environment, DI container
@@ -108,7 +123,39 @@ NODE_ENV=development
 PORT=3000
 JWT_SECRET=your-secret-key-change-in-production
 JWT_EXPIRES_IN=24h
+
+# Salesforce (legacy - not used by test double)
+SALESFORCE_INSTANCE_URL=https://example.salesforce.com
+SALESFORCE_ACCESS_TOKEN=token
+SALESFORCE_API_VERSION=v57.0
 ```
+
+## Salesforce Cart Context
+
+The Bridge API implements a **test double** for Salesforce cart operations with realistic behavior:
+
+### Features
+- **Non-persistent context**: Sessions expire after TTL (default: 15 minutes)
+- **Automatic context creation**: First cart operation creates a Salesforce context
+- **Context validation**: Checks context validity before operations
+- **Expiry handling**: Automatically creates new context when expired
+- **Network simulation**: Configurable latency and failure rates
+
+### Context Lifecycle
+1. Customer adds item to cart
+2. System checks for active Salesforce context
+3. If none exists or expired, creates new context
+4. Syncs cart data to Salesforce context
+5. Context expires after TTL
+6. Next operation creates fresh context
+
+### Implementation Details
+- **Test Double**: `SalesforceCartClientTestDouble`
+- **Interface**: `ISalesforceCartService`
+- **Domain Entity**: `SalesforceCartContext`
+- **Value Objects**: `ContextTTL`, `SalesforceContextId`
+- **Default TTL**: 900 seconds (15 minutes)
+- **TTL Range**: 60-7200 seconds
 
 ## Development
 
