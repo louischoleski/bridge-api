@@ -17,18 +17,38 @@
   "globals": { "BigInt": true, "console": true, "WebAssembly": true },
   "rules": {
     "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-non-null-assertion": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-namespace": "warn",
+    "@typescript-eslint/no-inferrable-types": "warn",
+    "no-useless-escape": "warn",
     "eslint-comments/disable-enable-pair": [
       "error",
       { "allowWholeFile": true }
     ],
     "eslint-comments/no-unused-disable": "error",
     "import/order": [
-      "error",
+      "warn",
       { "newlines-between": "always", "alphabetize": { "order": "asc" } }
     ],
     "sort-imports": [
-      "error",
+      "warn",
       { "ignoreDeclarationSort": true, "ignoreCase": true }
-    ]
+    ],
+    "functional/no-class": "off",
+    "functional/no-this-expression": "off",
+    "functional/prefer-type-literal": "off",
+    "functional/prefer-readonly-type": "off",
+    "functional/no-return-void": "off",
+    "functional/immutable-data": "off",
+    "functional/functional-parameters": "off",
+    "functional/no-let": "warn",
+    "functional/no-loop-statement": "warn",
+    "functional/no-throw-statement": "off",
+    "functional/no-try-statement": "off",
+    "functional/no-expression-statement": "off",
+    "functional/no-conditional-statement": "off",
+    "functional/no-method-signature": "off"
   }
 }

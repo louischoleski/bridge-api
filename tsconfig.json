@@ -10,6 +10,15 @@
     "inlineSourceMap": true,
     "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,
     "resolveJsonModule": true /* Include modules imported with .json extension. */,
+    "baseUrl": "./src",
+    "paths": {
+      "~domain/*": ["domain/*"],
+      "~application/*": ["application/*"],
+      "~infrastructure/*": ["infrastructure/*"],
+      "~api/*": ["api/*"],
+      "~config/*": ["config/*"],
+      "~shared/*": ["shared/*"]
+    },
 
     // "strict": true /* Enable all strict type-checking options. */,
 
